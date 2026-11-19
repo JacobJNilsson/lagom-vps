@@ -1,0 +1,17 @@
+#!/bin/sh
+# Fake curl. Writes one line of canned content to the -o file, or to stdout without -o.
+printf 'curl %s\n' "$*" >>"$FAKE_LOG"
+out=
+prev=
+for arg in "$@"; do
+	if [ "$prev" = -o ]; then
+		out=$arg
+	fi
+	prev=$arg
+done
+if [ -n "$out" ]; then
+	echo "fake content" >"$out"
+else
+	echo "fake content"
+fi
+exit 0

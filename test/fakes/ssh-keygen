@@ -1,0 +1,22 @@
+#!/bin/sh
+# Fake ssh-keygen. "-f FILE" creates FILE and FILE.pub. "-y -f FILE" prints a public key.
+printf 'ssh-keygen %s\n' "$*" >>"$FAKE_LOG"
+file=
+prev=
+gen=1
+for arg in "$@"; do
+	if [ "$prev" = -f ]; then
+		file=$arg
+	fi
+	if [ "$arg" = -y ]; then
+		gen=0
+	fi
+	prev=$arg
+done
+if [ "$gen" = 0 ]; then
+	echo "ssh-ed25519 AAAAfake placeholder"
+	exit 0
+fi
+echo "fake private key" >"$file"
+echo "ssh-ed25519 AAAAfake placeholder" >"$file.pub"
+exit 0

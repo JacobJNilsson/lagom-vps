@@ -1,0 +1,8 @@
+#!/bin/sh
+# Fake loginctl. "enable-linger USER" creates the linger file under LAGOM_ROOT.
+printf 'loginctl %s\n' "$*" >>"$FAKE_LOG"
+if [ "$1" = enable-linger ]; then
+	mkdir -p "$LAGOM_ROOT/var/lib/systemd/linger"
+	: >"$LAGOM_ROOT/var/lib/systemd/linger/$2"
+fi
+exit 0

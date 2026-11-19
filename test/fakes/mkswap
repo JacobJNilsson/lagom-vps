@@ -1,0 +1,4 @@
+#!/bin/sh
+# Fake mkswap: log only.
+printf 'mkswap %s\n' "$*" >>"$FAKE_LOG"
+exit 0

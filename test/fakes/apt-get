@@ -1,0 +1,32 @@
+#!/bin/sh
+# Fake apt-get. "install" marks packages as installed. "-s upgrade" prints
+# FAKE_UPGRADABLE pending upgrades until a real "upgrade" ran.
+printf 'apt-get %s\n' "$*" >>"$FAKE_LOG"
+mkdir -p "$FAKE_STATE/pkgs"
+action=
+simulate=0
+for arg in "$@"; do
+	case $arg in
+	-s | --simulate) simulate=1 ;;
+	-*) ;;
+	*)
+		if [ -z "$action" ]; then
+			action=$arg
+		elif [ "$action" = install ] && [ "$simulate" = 0 ]; then
+			: >"$FAKE_STATE/pkgs/$arg"
+		fi
+		;;
+	esac
+done
+if [ "$action" = upgrade ] && [ "$simulate" = 1 ] && [ ! -e "$FAKE_STATE/upgraded" ]; then
+	n=${FAKE_UPGRADABLE:-0}
+	i=0
+	while [ "$i" -lt "$n" ]; do
+		echo "Inst pkg$i"
+		i=$((i + 1))
+	done
+fi
+if [ "$action" = upgrade ] && [ "$simulate" = 0 ]; then
+	: >"$FAKE_STATE/upgraded"
+fi
+exit 0

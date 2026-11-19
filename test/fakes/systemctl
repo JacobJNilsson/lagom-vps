@@ -1,0 +1,10 @@
+#!/bin/sh
+# Fake systemctl. A unit is enabled or active when $FAKE_STATE/svc-UNIT exists.
+printf 'systemctl %s\n' "$*" >>"$FAKE_LOG"
+mkdir -p "$FAKE_STATE"
+verb=$1
+for unit in "$@"; do :; done
+case $verb in
+is-enabled | is-active) [ -e "$FAKE_STATE/svc-$unit" ] ;;
+enable | start) : >"$FAKE_STATE/svc-$unit" ;;
+esac

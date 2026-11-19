@@ -1,0 +1,7 @@
+#!/bin/sh
+# Fake dpkg. "-s PKG" succeeds when the fake apt-get installed PKG or the test marked it.
+printf 'dpkg %s\n' "$*" >>"$FAKE_LOG"
+case $1 in
+-s) [ -e "$FAKE_STATE/pkgs/$2" ] ;;
+--print-architecture) echo arm64 ;;
+esac

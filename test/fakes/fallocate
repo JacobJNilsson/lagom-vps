@@ -1,0 +1,6 @@
+#!/bin/sh
+# Fake fallocate. "fallocate -l SIZE FILE" creates an empty FILE.
+printf 'fallocate %s\n' "$*" >>"$FAKE_LOG"
+for last in "$@"; do :; done
+: >"$last"
+exit 0

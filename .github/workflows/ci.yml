@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck and shfmt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck shfmt
+      - name: Lint
+        run: make lint
+        env:
+          LINT_STRICT: "1"
+
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        run: make test
+
+  # Runs host-setup.sh on a real Arm machine. It never runs ssh-harden.sh.
+  idempotency:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: First run
+        run: sudo vps/host-setup.sh --swap-gb 1
+      - name: Second run changes nothing
+        run: |
+          out=$(sudo vps/host-setup.sh --swap-gb 1)
+          printf '%s\n' "$out"
+          if printf '%s\n' "$out" | grep -q '^changed:'; then
+            echo "the second run changed a file"
+            exit 1
+          fi
+      - name: Check passes
+        run: vps/host-setup.sh --check --swap-gb 1
+      - name: Tailscale dry run
+        run: sudo vps/tailscale.sh --dry-run

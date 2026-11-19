@@ -1,0 +1,4 @@
+#!/bin/sh
+# Fake sysctl: log only.
+printf 'sysctl %s\n' "$*" >>"$FAKE_LOG"
+exit 0
