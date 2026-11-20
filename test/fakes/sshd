@@ -1,0 +1,15 @@
+#!/bin/sh
+# Fake sshd. "-t" exits with FAKE_SSHD_T_RC. "-T" prints the hardened settings
+# when the keys-only drop-in exists under LAGOM_ROOT, else the cloud image defaults.
+printf 'sshd %s\n' "$*" >>"$FAKE_LOG"
+case $1 in
+-t) exit "${FAKE_SSHD_T_RC:-0}" ;;
+-T)
+	if [ -e "$LAGOM_ROOT/etc/ssh/sshd_config.d/10-keys-only.conf" ]; then
+		printf 'passwordauthentication no\nkbdinteractiveauthentication no\npermitrootlogin no\npubkeyauthentication yes\n'
+	else
+		printf 'passwordauthentication yes\nkbdinteractiveauthentication yes\npermitrootlogin prohibit-password\npubkeyauthentication yes\n'
+	fi
+	;;
+esac
+exit 0

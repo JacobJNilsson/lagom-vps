@@ -1,0 +1,13 @@
+#!/bin/sh
+# Fake git. "clone URL DIR" creates DIR/.git and copies the fake installer named by
+# FAKE_LAGOM_INSTALL to DIR/machine/install.sh. Other calls only log.
+printf 'git %s\n' "$*" >>"$FAKE_LOG"
+if [ "$1" = clone ]; then
+	dir=$3
+	mkdir -p "$dir/.git" "$dir/machine"
+	if [ -n "${FAKE_LAGOM_INSTALL:-}" ]; then
+		cp "$FAKE_LAGOM_INSTALL" "$dir/machine/install.sh"
+		chmod +x "$dir/machine/install.sh"
+	fi
+fi
+exit 0

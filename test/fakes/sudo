@@ -1,0 +1,11 @@
+#!/bin/sh
+# Fake sudo: log the call with --auth-key values redacted, then run the command as the current user.
+logged=
+for arg in "$@"; do
+	case $arg in
+	--auth-key=*) logged="$logged --auth-key=<redacted>" ;;
+	*) logged="$logged $arg" ;;
+	esac
+done
+printf 'sudo%s\n' "$logged" >>"$FAKE_LOG"
+exec "$@"

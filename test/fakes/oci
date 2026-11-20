@@ -1,0 +1,79 @@
+#!/bin/sh
+# Fake oci. It logs argv and answers the calls that laptop/oci-launch.sh makes.
+#   FAKE_OCI_INSTANCES  JSON text for "compute instance list" (default: no instances)
+#   FAKE_OCI_FULL_ADS   space-separated availability domains that answer "Out of host capacity"
+#   FAKE_OCI_BAD_COMPARTMENT  set to make "iam compartment get" fail
+printf 'oci %s\n' "$*" >>"$FAKE_LOG"
+group="$1 $2"
+verb=${3:-}
+case "$group $verb" in
+"compute instance list")
+	if [ -n "${FAKE_OCI_INSTANCES:-}" ]; then
+		printf '%s\n' "$FAKE_OCI_INSTANCES"
+	else
+		printf '{"data": []}\n'
+	fi
+	;;
+"compute image list")
+	printf '{"data": [\n'
+	printf '{"id": "ocid1.image.oc1..old", "display-name": "Canonical-Ubuntu-24.04-aarch64-2026.08.01-0", "time-created": "2026-08-02T00:00:00Z"},\n'
+	printf '{"id": "ocid1.image.oc1..minimal", "display-name": "Canonical-Ubuntu-24.04-Minimal-aarch64-2026.09.18-0", "time-created": "2026-09-21T00:00:00Z"},\n'
+	printf '{"id": "ocid1.image.oc1..newest", "display-name": "Canonical-Ubuntu-24.04-aarch64-2026.09.18-0", "time-created": "2026-09-20T00:00:00Z"}\n'
+	printf ']}\n'
+	;;
+"iam availability-domain list")
+	printf '{"data": [{"name": "AD-1"}, {"name": "AD-2"}]}\n'
+	;;
+"iam compartment get")
+	if [ -n "${FAKE_OCI_BAD_COMPARTMENT:-}" ]; then
+		echo "ServiceError: NotAuthorizedOrNotFound" >&2
+		exit 1
+	fi
+	printf '{"data": {"id": "ocid1.compartment.oc1..fake"}}\n'
+	;;
+"network security-list get")
+	if [ -e "$FAKE_STATE/seclist-rules.json" ]; then
+		printf '{"data": {"ingress-security-rules": %s}}\n' "$(cat "$FAKE_STATE/seclist-rules.json")"
+	else
+		printf '{"data": {"ingress-security-rules": [\n'
+		printf '{"protocol": "6", "source": "0.0.0.0/0", "source-type": "CIDR_BLOCK", "is-stateless": false, "tcp-options": {"destination-port-range": {"min": 22, "max": 22}}},\n'
+		printf '{"protocol": "6", "source": "0.0.0.0/0", "source-type": "CIDR_BLOCK", "is-stateless": false, "tcp-options": {"destination-port-range": {"min": 443, "max": 443}}},\n'
+		printf '{"protocol": "1", "source": "0.0.0.0/0", "source-type": "CIDR_BLOCK", "is-stateless": false, "icmp-options": {"type": 3, "code": 4}}\n'
+		printf ']}}\n'
+	fi
+	;;
+"network security-list update")
+	prev=
+	for arg in "$@"; do
+		if [ "$prev" = --ingress-security-rules ]; then
+			cp "${arg#file://}" "$FAKE_STATE/seclist-rules.json"
+		fi
+		prev=$arg
+	done
+	printf '{"data": {}}\n'
+	;;
+"compute instance list-vnics")
+	printf '{"data": [{"nsg-ids": ["ocid1.nsg.oc1..fake"]}]}\n'
+	;;
+"network nsg rules")
+	printf '{"data": [{"protocol": "6", "source": "0.0.0.0/0", "tcp-options": {"destination-port-range": {"min": 22, "max": 22}}}]}\n'
+	;;
+"compute instance launch")
+	ad=
+	prev=
+	for arg in "$@"; do
+		if [ "$prev" = --availability-domain ]; then
+			ad=$arg
+		fi
+		prev=$arg
+	done
+	for full in ${FAKE_OCI_FULL_ADS:-}; do
+		if [ "$full" = "$ad" ]; then
+			printf '{"code": "InternalError", "message": "Out of host capacity."}\n' >&2
+			exit 1
+		fi
+	done
+	printf '{"data": {"id": "ocid1.instance.oc1..fake"}}\n'
+	;;
+esac
+exit 0

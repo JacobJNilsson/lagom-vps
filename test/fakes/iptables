@@ -1,0 +1,7 @@
+#!/bin/sh
+# Fake iptables. "-S" prints the file named by FAKE_IPTABLES_FILE.
+printf 'iptables %s\n' "$*" >>"$FAKE_LOG"
+if [ "$1" = -S ] && [ -n "${FAKE_IPTABLES_FILE:-}" ]; then
+	cat "$FAKE_IPTABLES_FILE"
+fi
+exit 0

@@ -1,0 +1,4 @@
+#!/bin/sh
+# Fake sleep: log the request and return at once.
+printf 'sleep %s\n' "$*" >>"$FAKE_LOG"
+exit 0

@@ -1,0 +1,13 @@
+#!/bin/sh
+# Fake swapon. "swapon FILE" records FILE as active. "--show" lists the active files.
+printf 'swapon %s\n' "$*" >>"$FAKE_LOG"
+mkdir -p "$FAKE_STATE"
+case $1 in
+--show*)
+	if [ -e "$FAKE_STATE/swap" ]; then
+		cat "$FAKE_STATE/swap"
+	fi
+	;;
+*) echo "$1" >>"$FAKE_STATE/swap" ;;
+esac
+exit 0

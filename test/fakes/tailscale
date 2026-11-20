@@ -1,0 +1,52 @@
+#!/bin/sh
+# Fake tailscale. State lives in $FAKE_STATE: ts-up (logged in), ts-ssh (Tailscale SSH on).
+# The log redacts --auth-key values. The key goes to $FAKE_STATE/ts-key so a test can see it arrived.
+#   FAKE_TS_PEER_ONLINE  yes or no adds a peer named lagom-vps to "status --json"
+mkdir -p "$FAKE_STATE"
+logged=
+for arg in "$@"; do
+	case $arg in
+	--auth-key=*)
+		printf '%s\n' "${arg#--auth-key=}" >"$FAKE_STATE/ts-key"
+		logged="$logged --auth-key=<redacted>"
+		;;
+	*) logged="$logged $arg" ;;
+	esac
+done
+printf 'tailscale%s\n' "$logged" >>"$FAKE_LOG"
+case $1 in
+status)
+	if [ -e "$FAKE_STATE/ts-up" ]; then
+		state=Running
+	else
+		state=NeedsLogin
+	fi
+	printf '{\n  "BackendState": "%s",\n  "Peer": {\n' "$state"
+	case ${FAKE_TS_PEER_ONLINE:-} in
+	yes) printf '    "nodekey:fake": {"HostName": "lagom-vps", "Online": true}\n' ;;
+	no) printf '    "nodekey:fake": {"HostName": "lagom-vps", "Online": false}\n' ;;
+	esac
+	printf '  }\n}\n'
+	;;
+up)
+	: >"$FAKE_STATE/ts-up"
+	for arg in "$@"; do
+		if [ "$arg" = --ssh ]; then
+			: >"$FAKE_STATE/ts-ssh"
+		fi
+	done
+	;;
+set)
+	if [ "$2" = --ssh ]; then
+		: >"$FAKE_STATE/ts-ssh"
+	fi
+	;;
+debug)
+	if [ -e "$FAKE_STATE/ts-ssh" ]; then
+		printf '{\n  "RunSSH": true\n}\n'
+	else
+		printf '{\n  "RunSSH": false\n}\n'
+	fi
+	;;
+esac
+exit 0

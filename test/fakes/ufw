@@ -1,0 +1,7 @@
+#!/bin/sh
+# Fake ufw. "status" prints "Status: active" when FAKE_UFW is active, else inactive.
+printf 'ufw %s\n' "$*" >>"$FAKE_LOG"
+if [ "$1" = status ]; then
+	echo "Status: ${FAKE_UFW:-inactive}"
+fi
+exit 0

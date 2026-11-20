@@ -1,0 +1,15 @@
+#!/bin/sh
+# Fake timedatectl. The zone lives in $FAKE_STATE/tz and defaults to Etc/UTC.
+printf 'timedatectl %s\n' "$*" >>"$FAKE_LOG"
+mkdir -p "$FAKE_STATE"
+case $1 in
+show)
+	if [ -e "$FAKE_STATE/tz" ]; then
+		cat "$FAKE_STATE/tz"
+	else
+		echo Etc/UTC
+	fi
+	;;
+set-timezone) echo "$2" >"$FAKE_STATE/tz" ;;
+esac
+exit 0
